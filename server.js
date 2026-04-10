@@ -29,6 +29,7 @@ import chartOfAccountsRoutes from './routes/chartOfAccounts.js';
 import profileRoutes from './routes/profile.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import fs from 'fs';
 
 // Load environment variables
 dotenv.config();
@@ -238,6 +239,10 @@ app.use('/uploads', (req, res, next) => {
   }
   next();
 }, express.static(path.join(__dirname, 'uploads')));
+
+// Frontend SPA (Vite/React build): copy dist into /public so refresh on /any/route works
+const publicDir = path.join(__dirname, 'public');
+app.use(express.static(publicDir));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -1175,6 +1180,14 @@ app.use('/api/company-locations', companyLocationsRoutes);
 // Chart of Accounts Routes
 app.use('/api/chart-of-accounts', chartOfAccountsRoutes);
 
+// Hard refresh / Ctrl+Shift+R: serve index.html for client routes (not /api, not /uploads)
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  if (req.path.startsWith('/uploads')) return next();
+  const indexFile = path.join(publicDir, 'index.html');
+  if (!fs.existsSync(indexFile)) return next();
+  res.sendFile(indexFile, (err) => (err ? next() : undefined));
+});
 
 // 404 handler
 app.use('*', (req, res) => {
