@@ -49,7 +49,7 @@ app.use((req, res, next) => {
   console.log(`🌐 ALL REQUESTS - Method: ${req.method}, Path: ${req.path}, Origin: ${origin || 'No origin'}`);
   
   // Always allow production frontend
-  if (origin === 'https://mediumslateblue-snake-987326.hostingersite.com') {
+  if (origin === 'http://darkred-sandpiper-735493.hostingersite.com/') {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
@@ -74,7 +74,7 @@ const defaultOrigins = [
 ];
 
 // Production frontend domain - ALWAYS ADDED (hardcoded for reliability)
-const productionFrontend = 'https://mediumslateblue-snake-987326.hostingersite.com';
+const productionFrontend = 'http://darkred-sandpiper-735493.hostingersite.com/';
 
 // Get extra origins from env
 const envOrigins = process.env.CORS_ORIGIN
@@ -109,7 +109,7 @@ app.options('*', (req, res) => {
   console.log(`🚀 PREFLIGHT OPTIONS - Path: ${req.path}`);
   
   // CRITICAL: Always allow production frontend (hardcoded check)
-  if (origin === 'https://mediumslateblue-snake-987326.hostingersite.com') {
+  if (origin === 'http://darkred-sandpiper-735493.hostingersite.com/') {
     console.log(`✅ PREFLIGHT: Production frontend allowed (hardcoded)`);
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
@@ -311,7 +311,7 @@ app.options('/test-cors', (req, res) => {
   console.log(`🧪 TEST CORS OPTIONS - This endpoint should work if code is deployed`);
   
   // Always allow production frontend
-  if (origin === 'https://mediumslateblue-snake-987326.hostingersite.com') {
+  if (origin === 'http://darkred-sandpiper-735493.hostingersite.com/') {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
