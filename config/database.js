@@ -3,9 +3,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-function mysqlPasswordFromEnv(fallback) {
+/** Hostinger / panel UIs sometimes save literal "..." as part of the value — strip one pair. */
+function mysqlPasswordFromEnv() {
   const raw = process.env.DB_PASSWORD;
-  if (raw == null || raw === '') return fallback;
+  if (raw == null || raw === '') return '';
   let p = String(raw).trim();
   if (
     (p.startsWith('"') && p.endsWith('"')) ||
@@ -16,12 +17,12 @@ function mysqlPasswordFromEnv(fallback) {
   return p;
 }
 
-// Hostinger: Node + MySQL same account → DB_HOST must be localhost (NOT the public IP). Env overrides this.
 export const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'u221106554_root',
-  password: process.env.DB_PASSWORD || 'Nono@#696969',
-  database: process.env.DB_NAME || 'u221106554_fluent_lol',
+  // Use 127.0.0.1 not "localhost": Node resolves localhost → ::1 (IPv6); MySQL often grants 127.0.0.1 / localhost, not ::1 → Access denied.
+  host: process.env.DB_HOST || '127.0.0.1',
+  user: process.env.DB_USER || '',
+  password: mysqlPasswordFromEnv(),
+  database: process.env.DB_NAME || '',
   port: process.env.DB_PORT || 3306,
   waitForConnections: true,
   connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 20, // Increased from 10 to 20
