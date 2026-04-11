@@ -34,12 +34,42 @@ import fs from 'fs';
 // Load environment variables
 dotenv.config();
 
+/** Browser Origin has no trailing slash; env URLs may — normalize for comparisons */
+function normalizeOrigin(o) {
+  if (!o || typeof o !== 'string') return '';
+  return o.trim().replace(/\/+$/, '');
+}
+
+// Deployed SPA URL (browser Origin for CORS) — NOT the API host. Hostinger: set FRONTEND_ORIGIN if URL changes
+const productionFrontend = normalizeOrigin(
+  process.env.FRONTEND_ORIGIN || 'https://cyan-seahorse-227263.hostingersite.com'
+);
+
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:8080',
+  'http://localhost:8081',
+  'http://localhost:3000'
+];
+
+const envOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((o) => normalizeOrigin(o)).filter(Boolean)
+  : [];
+
+const allowedOrigins = [...defaultOrigins, ...envOrigins, productionFrontend].filter(Boolean);
+let uniqueOrigins = [...new Set(allowedOrigins)];
+if (uniqueOrigins.indexOf(productionFrontend) === -1) {
+  uniqueOrigins.push(productionFrontend);
+}
+
 // Log environment variables status on startup (for debugging)
 console.log('🔍 Environment Variables Status:');
 console.log('  NODE_ENV:', process.env.NODE_ENV || 'not set');
 console.log('  JWT_SECRET:', process.env.JWT_SECRET ? `✅ Set (${process.env.JWT_SECRET.length} chars)` : '❌ Not set');
 console.log('  DB_HOST:', process.env.DB_HOST || 'not set');
 console.log('  PORT:', process.env.PORT || 'not set');
+console.log('  FRONTEND_ORIGIN (CORS):', productionFrontend);
+console.log('  CORS_ORIGIN env:', process.env.CORS_ORIGIN || 'not set');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -49,8 +79,8 @@ app.use((req, res, next) => {
   const origin = req.headers.origin;
   console.log(`🌐 ALL REQUESTS - Method: ${req.method}, Path: ${req.path}, Origin: ${origin || 'No origin'}`);
   
-  // Always allow production frontend
-  if (origin === 'http://darkred-sandpiper-735493.hostingersite.com/') {
+  // Always allow production frontend (same host as SPA — cyan-seahorse, not the API host)
+  if (origin === productionFrontend) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
@@ -66,42 +96,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Build allowed origins list from env + local defaults
-const defaultOrigins = [
-  'http://localhost:5173',
-  'http://localhost:8080',
-  'http://localhost:8081',
-  'http://localhost:3000'
-];
-
-// Production frontend domain - ALWAYS ADDED (hardcoded for reliability)
-const productionFrontend = 'http://darkred-sandpiper-735493.hostingersite.com/';
-
-// Get extra origins from env
-const envOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()).filter(Boolean)
-  : [];
-
-// Combine all origins - production domain is always included
-const allowedOrigins = [
-  ...defaultOrigins,
-  ...envOrigins,
-  productionFrontend // Always include production domain
-].filter(Boolean);
-
-// Remove duplicates
-let uniqueOrigins = [...new Set(allowedOrigins)];
-
-// CRITICAL SAFETY CHECK: Ensure production frontend is ALWAYS included
-if (uniqueOrigins.indexOf(productionFrontend) === -1) {
-  console.warn('⚠️ WARNING: Production frontend not in uniqueOrigins, adding it now!');
-  uniqueOrigins.push(productionFrontend);
-}
-
-// Log allowed origins on startup
 console.log('🌍 CORS Allowed Origins:', uniqueOrigins);
-console.log('🌍 CORS_ORIGIN env:', process.env.CORS_ORIGIN || 'Not set');
-console.log('🌍 Production Frontend (hardcoded):', productionFrontend);
 
 // CRITICAL: Handle OPTIONS preflight requests FIRST (before CORS middleware)
 app.options('*', (req, res) => {
@@ -109,9 +104,9 @@ app.options('*', (req, res) => {
   console.log(`🚀 PREFLIGHT OPTIONS - Origin: ${origin || 'No origin'}`);
   console.log(`🚀 PREFLIGHT OPTIONS - Path: ${req.path}`);
   
-  // CRITICAL: Always allow production frontend (hardcoded check)
-  if (origin === 'http://darkred-sandpiper-735493.hostingersite.com/') {
-    console.log(`✅ PREFLIGHT: Production frontend allowed (hardcoded)`);
+  // CRITICAL: Always allow production frontend
+  if (origin === productionFrontend) {
+    console.log(`✅ PREFLIGHT: Production frontend allowed`);
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -316,7 +311,7 @@ app.options('/test-cors', (req, res) => {
   console.log(`🧪 TEST CORS OPTIONS - This endpoint should work if code is deployed`);
   
   // Always allow production frontend
-  if (origin === 'http://darkred-sandpiper-735493.hostingersite.com/') {
+  if (origin === productionFrontend) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');

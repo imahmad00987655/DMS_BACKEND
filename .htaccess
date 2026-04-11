@@ -1,7 +1,7 @@
 # CORS Headers for Apache
 <IfModule mod_headers.c>
     # Allow OPTIONS preflight requests
-    Header always set Access-Control-Allow-Origin "http://darkred-sandpiper-735493.hostingersite.com/"
+    Header always set Access-Control-Allow-Origin "https://cyan-seahorse-227263.hostingersite.com"
     Header always set Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
     Header always set Access-Control-Allow-Credentials "true"
