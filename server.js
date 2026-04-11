@@ -221,6 +221,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Serve uploaded files statically with CORS and CORP headers
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+/** Change this string when you need to confirm Hostinger deployed the latest commit (GET /health). */
+const DEPLOY_BUILD_TAG = '2026-04-11-db-config-v2';
+
 app.use('/uploads', (req, res, next) => {
   // Set CORS headers for static files
   res.header('Access-Control-Allow-Origin', '*');
@@ -246,26 +250,36 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check route
+// Health check route — open in browser to verify Hostinger is running the build you expect
 app.get('/health', (req, res) => {
   res.json({
     success: true,
     message: 'Server is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    version: '2.0.0-cors-fix-v4', // Version to verify latest code is deployed
+    npmPackageVersion: pkg.version,
+    deployBuildTag: DEPLOY_BUILD_TAG,
+    gitCommitFromEnv:
+      process.env.GIT_COMMIT ||
+      process.env.COMMIT_SHA ||
+      process.env.VERCEL_GIT_COMMIT_SHA ||
+      process.env.RAILWAY_GIT_COMMIT_SHA ||
+      null,
     productionFrontend: productionFrontend,
-    hasTopLevelCORS: true,
-    gitCommit: '43939ae', // Latest commit hash
-    deployedAt: '2025-12-24T06:40:00Z'
+    hasTopLevelCORS: true
   });
 });
 
 // Deployment verification endpoint
 app.get('/deployment-info', (req, res) => {
   res.json({
-    version: '2.0.0-cors-fix-v4',
-    gitCommit: '43939ae',
+    npmPackageVersion: pkg.version,
+    deployBuildTag: DEPLOY_BUILD_TAG,
+    gitCommitFromEnv:
+      process.env.GIT_COMMIT ||
+      process.env.COMMIT_SHA ||
+      process.env.VERCEL_GIT_COMMIT_SHA ||
+      null,
     features: {
       topLevelCORS: true,
       explicitOPTIONSHandler: true,
@@ -330,7 +344,8 @@ app.get('/test-cors', (req, res) => {
   res.json({
     success: true,
     message: 'CORS test endpoint - Latest code deployed',
-    version: '2.0.0-cors-fix-v3',
+    deployBuildTag: DEPLOY_BUILD_TAG,
+    npmPackageVersion: pkg.version,
     origin: req.headers.origin || 'No origin',
     timestamp: new Date().toISOString(),
     productionFrontend: productionFrontend
