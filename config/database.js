@@ -3,6 +3,19 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+function mysqlPasswordFromEnv(fallback) {
+  const raw = process.env.DB_PASSWORD;
+  if (raw == null || raw === '') return fallback;
+  let p = String(raw).trim();
+  if (
+    (p.startsWith('"') && p.endsWith('"')) ||
+    (p.startsWith("'") && p.endsWith("'"))
+  ) {
+    p = p.slice(1, -1);
+  }
+  return p;
+}
+
 // Hostinger: Node + MySQL same account → DB_HOST must be localhost (NOT the public IP). Env overrides this.
 export const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
