@@ -17,22 +17,71 @@ function mysqlPasswordFromEnv() {
   return p;
 }
 
-export const dbConfig = {
-  // Use 127.0.0.1 not "localhost": Node resolves localhost → ::1 (IPv6); MySQL often grants 127.0.0.1 / localhost, not ::1 → Access denied.
-  host: process.env.DB_HOST || '127.0.0.1',
-  user: process.env.DB_USER || '',
-  password: mysqlPasswordFromEnv(),
-  database: process.env.DB_NAME || '',
-  port: process.env.DB_PORT || 3306,
-  waitForConnections: true,
-  connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 20, // Increased from 10 to 20
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0,
-  acquireTimeout: 60000, // 60 seconds
-  timeout: 60000 // 60 seconds
-};
+function buildDbConfig() {
+  const user = (process.env.DB_USER || '').trim();
+  const password = mysqlPasswordFromEnv();
+  const database = (process.env.DB_NAME || '').trim();
+  const port = Number(process.env.DB_PORT) || 3306;
+  const socketPath = (process.env.DB_SOCKET || '').trim();
 
+  const core = {
+    user,
+    password,
+    database
+  };
+
+  // Unix socket (some shared hosts: MySQL grants @'localhost' only for socket — TCP 127.0.0.1 can still fail)
+  if (socketPath) {
+    return {
+      ...core,
+      socketPath,
+      port,
+      waitForConnections: true,
+      connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT, 10) || 20,
+      queueLimit: 0,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 0,
+      acquireTimeout: 60000,
+      timeout: 60000
+    };
+  }
+
+  // 127.0.0.1 avoids localhost → ::1 (IPv6) mismatch; use DB_HOST from hPanel if Hostinger shows a hostname
+  const host = (process.env.DB_HOST || '127.0.0.1').trim();
+
+  return {
+    ...core,
+    host,
+    port,
+    waitForConnections: true,
+    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT, 10) || 20,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
+    acquireTimeout: 60000,
+    timeout: 60000
+  };
+}
+
+export const dbConfig = buildDbConfig();
+
+if (!process.env.DATABASE_URL) {
+  const pwd = mysqlPasswordFromEnv();
+  if (!process.env.DB_USER?.trim() || !pwd || !process.env.DB_NAME?.trim()) {
+    console.error(
+      '❌ DB config: set DB_USER, DB_PASSWORD, and DB_NAME in environment (Hostinger → Environment Variables). Empty password causes Access denied.'
+    );
+  } else {
+    console.log('🔐 DB env:', {
+      host: dbConfig.host || '(socket)',
+      socketPath: dbConfig.socketPath || undefined,
+      user: dbConfig.user,
+      database: dbConfig.database,
+      passwordSet: pwd.length > 0,
+      port: dbConfig.port
+    });
+  }
+}
 
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
@@ -46,7 +95,8 @@ export const testConnection = async () => {
     connection.release();
 
     console.log('✅ Database connected successfully', {
-      host: dbConfig.host,
+      host: dbConfig.host ?? (dbConfig.socketPath ? '(socket)' : undefined),
+      socketPath: dbConfig.socketPath,
       user: dbConfig.user,
       database: dbConfig.database,
       port: dbConfig.port
@@ -61,6 +111,7 @@ export const testConnection = async () => {
       sqlState: error.sqlState,
       config: {
         host: dbConfig.host,
+        socketPath: dbConfig.socketPath,
         user: dbConfig.user,
         database: dbConfig.database,
         port: dbConfig.port
