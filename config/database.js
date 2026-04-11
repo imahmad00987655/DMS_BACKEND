@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Hostinger: jab Node app aur MySQL same account par hon to DB_HOST = localhost (public IP se aksar "Access denied")
+// Hostinger: Node + MySQL same account → DB_HOST must be localhost (NOT the public IP). Env overrides this.
 export const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
