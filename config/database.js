@@ -5,11 +5,11 @@ dotenv.config();
 
 // Hostinger: Node + MySQL same account → DB_HOST must be localhost (NOT the public IP). Env overrides this.
 export const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD ?? '',
-  database: process.env.DB_NAME || 'fluent_financial_flow',
-  port: parseInt(process.env.DB_PORT, 10) || 3306,
+  host: process.env.DB_HOST || '194.59.164.74',
+  user: process.env.DB_USER || 'u221106554_root',
+  password: process.env.DB_PASSWORD || 'Nono@#696969',
+  database: process.env.DB_NAME || 'u221106554_fluent_lol',
+  port: process.env.DB_PORT || 3306,
   waitForConnections: true,
   connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 20, // Increased from 10 to 20
   queueLimit: 0,
@@ -18,6 +18,7 @@ export const dbConfig = {
   acquireTimeout: 60000, // 60 seconds
   timeout: 60000 // 60 seconds
 };
+
 
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
