@@ -42,7 +42,7 @@ function normalizeOrigin(o) {
 
 // Deployed SPA URL (browser Origin for CORS) — NOT the API host. Hostinger: set FRONTEND_ORIGIN if URL changes
 const productionFrontend = normalizeOrigin(
-  process.env.FRONTEND_ORIGIN || 'https://cyan-seahorse-227263.hostingersite.com'
+  process.env.FRONTEND_ORIGIN || 'https://viewodash.com/'
 );
 
 const defaultOrigins = [
